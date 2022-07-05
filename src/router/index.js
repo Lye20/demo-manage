@@ -7,7 +7,7 @@ export const constRoutes = {
   routes: [{
       name: "main",
       path: "/",
-      redirect: "/home",
+      redirect: "/goods",
       component: () =>
         import ("../pages/main"),
     },

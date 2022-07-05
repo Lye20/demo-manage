@@ -13,10 +13,12 @@
     <el-main class="goods-main">  
       <el-table class="goods-table" ref="multipleTable" :data="showTableData" tooltip-effect="dark" :default-sort="{prop: 'id'}" height="100%" @selection-change="handleSelectionChange" :select-on-indeterminate="false" highlight-current-row>
         <el-table-column type="selection" width="55"></el-table-column>
-        <el-table-column prop="id" label="ID" width="80px"></el-table-column>
+        <el-table-column prop="id" label="ID" width="135px"></el-table-column>
         <el-table-column prop="name" label="名称" show-overflow-tooltip></el-table-column>
+        <el-table-column prop="item" label="项目" width="120px"></el-table-column>
         <el-table-column prop="price" label="价格" width="100px" ></el-table-column>
-        <el-table-column prop="number" label="数量" width="80px"></el-table-column>
+        <el-table-column prop="number" label="数量" width="80px">
+        </el-table-column>
         <el-table-column prop="category" label="类别" width="100px"></el-table-column>
         <el-table-column label="图片" width="70px">
           <template slot-scope="scope"><img :src="scope.row.img" style="width: 100%"></template>
@@ -24,6 +26,7 @@
         <el-table-column fixed="right" label="操作" width="100px">
           <template slot-scope="scope">
             <el-button type="text" size="small" @click="edit(scope.row)">编辑</el-button>
+            <el-button type="text" size="small" @click="delItem(scope.row)">下架</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -33,20 +36,20 @@
         <el-button type="info" @click="clearSelection">取消选择</el-button>
         <el-button type="danger" @click="del">下架选中商品</el-button>
         <el-button type="warning" @click="add">上架商品</el-button>
-        <el-button type="success" @click="saveEdit">保存修改</el-button>
-        <el-button type="primary" @click="loadTemp">加载本地数据</el-button>
-        <el-button type="primary" @click="saveTemp">缓存数据</el-button>
       </div>
       <el-dialog class="good-dialog" :title="formMode" :visible.sync="goodFormVisible">
         <el-form :model="goodForm" :rules="goodFormRules" ref="goodForm">
           <el-form-item label="名称" prop="name">
             <el-input v-model.trim="goodForm.name" autocomplete="off"></el-input>
           </el-form-item>
+          <el-form-item label="项目" prop="item">
+            <el-input v-model.trim="goodForm.item" autocomplete="off"></el-input>
+          </el-form-item>
           <el-form-item label="价格" prop="price">
             <el-input v-model.trim="goodForm.price" autocomplete="off"></el-input>
           </el-form-item>
-          <el-form-item label="数量" prop="number">
-            <el-input v-model.number="goodForm.number" autocomplete="off"></el-input>
+          <el-form-item label='数量' prop="number">
+            <el-input v-model="goodForm.number" autocomplete="off"></el-input>
           </el-form-item>
           <el-form-item label="类别" prop="category">
             <el-select v-model.trim="goodForm.category" placeholder="请选择类别">
@@ -63,7 +66,7 @@
           </el-form-item>
         </el-form>
         <div slot="footer" class="dialog-footer">
-          <el-button @click="goodFormVisible=false">取 消</el-button>
+          <el-button @click="cancel">取 消</el-button>
           <el-button type="primary" @click="submitForm">确 定</el-button>
         </div>
       </el-dialog>
@@ -73,8 +76,8 @@
 </template>
 
 <script>
-  console.log("goods页面加载啦")
-  import { loadGoodsData, updateGoodsData } from "../../api/goodsData"
+  import { requestGoods, addGood, deleteGood, editGood } from "@/api"
+  import day from "dayjs"
   export default {
     name: 'GoodsPage',
     data(){
@@ -90,13 +93,13 @@
         goodForm: {},
         goodFormRules: {
           name: [{required:true, message: "请输入名称", trigger: "blur"}],
+          item: [{required:true, message: "请输入项目", trigger: "blur"}],
           price: [{required:true, message: "请输入价格", trigger: "blur"}],
           number: [{required:true, message: "请输入数量", trigger: "blur"}],
           category: [{required:true, message: "请选择类别", trigger: "blur"}],
           img: [{required:true, message: "请上传图片"}]
         },
-        formMode: "新商品",
-        editingRowData: {}
+        formMode: "",
       }  
     },
     computed:{
@@ -113,7 +116,8 @@
     },
     methods: {
       keepSelected(oldItem){
-        this.allSelection = [...this.allSelection.filter(item=>!(new Set(oldItem)).has(item)), ...this.multipleSelection]
+        oldItem = new Set(oldItem)
+        this.allSelection = [...this.allSelection.filter(item=>!oldItem.has(item)), ...this.multipleSelection]
         this.$nextTick(()=>{
           this.showTableData.forEach(item=>{
             (new Set(this.allSelection)).has(item) && this.$refs.multipleTable.toggleRowSelection(item, true)
@@ -129,38 +133,57 @@
       uploadImg(file){
         let reader = new FileReader()
         reader.onload = (event=>{
-          console.log(event)
-          this.goodForm.img = event.target.result
+          const total = event.total
+          const result = event.target.result
+          if (!/^data:image\/jpeg;base64,/.test(result)) alert("仅支持jpg格式图片")
+          else if (total / 1024 > 40) alert("图片不能大于40kB")
+          else this.goodForm.img = result
           })
-        console.log(file)
         reader.readAsDataURL(file.raw)
-        
       },
       submitForm(){
         this.$refs.goodForm.validate((result)=> {
           if (result) {
-            if (this.formMode === "新商品") {
-              this.goodsData.push(this.goodForm)
-              this.jumpTail()
+            if (this.formMode === "上架商品") {
+              addGood({...this.goodForm}).then(response=>{
+                if (response.data.code !== 200) return Promise.reject(response.data.message)
+                alert(response.data.message)
+                this.getData()
+                this.jumpTail()
+              }).catch(err=>alert(err))
             } else {
-              for (let key in this.goodForm) this.editingRowData[key] = this.goodForm[key]
+              editGood({...this.goodForm}).then(response=>{
+                if (response.data.code !== 200) return Promise.reject(response.data.message)
+                alert(response.data.message)
+                this.getData()
+              }).catch(err=>alert(err))
             }
             this.goodFormVisible = false
           }
         })
       },
       add(){
-        this.formMode = "新商品"
-        console.log(this.goodsData.length)
-        let id = this.goodsData.length ? this.goodsData[this.goodsData.length-1].id+1 : 1
-        this.goodForm = {id, name: "", img: "", price: "", number: "", category: ""}
+        this.formMode = "上架商品"
+        this.goodForm = {id:day(Date()).format("YYYYMMDDHHmmss"), name: "", item: "", img: "", price: "", number: "", category: ""}
         this.goodFormVisible = true
-        
       },
-      del(){
-        this.keepSelected(this.showTableData)
-        this.goodsData = this.goodsData.filter(item=>!(new Set(this.allSelection)).has(item))
-        this.jumpHead()
+      delItem(item){
+        deleteGood(item.id).then(response=>{
+          if (response.data.code !== 200) return Promise.reject(response.data.message)
+          this.getData()
+        }).catch(err=>alert(err))
+      },
+      async del(){
+        this.keepSelected()
+        for (let item of this.allSelection) {
+          let response = await deleteGood(item.id)
+          if (response.data.code !== 200) {
+            alert(`${item.id}下架失败`)
+          }
+        }
+        this.allSelection = []
+        this.multipleSelection = []
+        this.getData()
       },
       search(){
         this.inp && this.keywords.push(this.inp)
@@ -173,13 +196,12 @@
         this.jumpHead()
       },
       edit(rowData){
-        this.formMode = "修改信息"
+        this.formMode = "编辑商品"
         this.goodForm = {...rowData}
-        this.editingRowData = rowData
         this.goodFormVisible = true
       },
       reset(){
-        this.keyword = ""
+        this.keywords = []
         this.$refs.multipleTable.clearSelection()
         this.$refs.multipleTable.clearSort()
         this.allSelection = []
@@ -192,21 +214,16 @@
       handleSelectionChange(val) {
         this.multipleSelection = val;
       },
-      saveTemp(){
-        localStorage.setItem("goods", JSON.stringify(this.goodsData))
-        alert("缓存成功")
+      getData(){
+        requestGoods().then(response=>{
+          if (response.data.code !== 200) return Promise.reject()
+          this.goodsData = response.data.data
+        }).catch(err=>(console.log(err)))
       },
-      loadTemp(){
-        this.goodsData = JSON.parse(localStorage.getItem("goods"))
-      },
-      saveEdit(){
-        updateGoodsData(this.goodsData).then(response=>{
-          alert(response.data)
-        }).catch(err=>{
-          alert(err.message)
-        })
-      },
-      test(){console.log(this.goodForm.img)}
+      cancel(){
+        this.goodFormVisible = false
+        this.$refs.goodForm.resetFields()
+      }
     },
     watch: {
       showTableData(newItem, oldItem){
@@ -214,10 +231,7 @@
       }
     },
     mounted(){
-      loadGoodsData().then(response=>{this.goodsData = response.data}).catch(err=>(console.log(err)))
-    },
-    beforeDestroy(){
-      console.log("goods要被销毁啦")
+      this.getData()
     }
   }
 </script>
@@ -256,7 +270,7 @@
         margin 0 !important
         .el-button
           float left
-          &:nth-child(4),&:nth-child(5),&:nth-child(6)
+          &:nth-child(3)
             float right
       .good-dialog
         text-align left 

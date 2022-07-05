@@ -1,10 +1,10 @@
 <template>
   <div class="body" @keydown.enter="submitForm">
     <el-card class="loginCard">
-        <h1>通用后台管理系统</h1>
+        <h1>后台管理系统</h1>
         <el-form ref="loginForm" :model="loginForm" :rules="loginFormRules" label-width="100px" hide-required-asterisk>
-          <el-form-item label="账号" prop="acount" >
-            <el-input autocomplete="off" v-model="loginForm.acount"></el-input>
+          <el-form-item label="账号" prop="account" >
+            <el-input autocomplete="off" v-model="loginForm.account"></el-input>
           </el-form-item>
           <el-form-item label="密码" prop="password">
             <el-input type="password" v-model="loginForm.password" autocomplete="off"></el-input>
@@ -18,17 +18,17 @@
 </template>
 
 <script>
-import {loginRequest} from "../../api/loginRequest"
+import {loginRequest} from "@/api"
 export default {
   name: "LoginPage",
   data(){
     return {
       loginForm: {
-        acount: "",
+        account: "",
         password: ""
       },
       loginFormRules:{
-        acount: [{required: true, message: "请输入账号", trigger: "blur"}],
+        account: [{required: true, message: "请输入账号", trigger: "blur"}],
         password: [{required: true, message: "请输入密码", trigger: "blur"}]
       }
     }
@@ -37,20 +37,15 @@ export default {
     submitForm(){
       this.$refs.loginForm.validate(result=>{
         if (result){
-          this.sendRequest()
+          this.sendRequest().catch(err=>alert(err))
         }
       })
     },
-    sendRequest(){
-      loginRequest(this.loginForm).then(
-        response=>{
-          if (response.data.status === 403) return Promise.reject(response.data.message)
-          this.$store.commit("login/ADD_TOKEN", response.data.token)
-          this.$store.commit("login/GET_PROFILE", response.data.token)
-          this.$router.replace({name: "main"})
-        }, 
-        err=>alert.log("请求失败", err)).catch(err=>{alert(err)}
-      )
+    async sendRequest(){
+      const response = await loginRequest(this.loginForm)
+      if (response.data.code !== 200) return Promise.reject(response.data.message)
+      this.$store.commit("SET_TOKEN", response.data.token)
+      this.$router.replace({name: "main"})
     }
   }
 }
@@ -61,7 +56,7 @@ export default {
     width 100vw
     height 100vh
     background url("../../assets/images/bg.jpeg") no-repeat
-    background-size 2560px 1440px
+    background-size cover
     .loginCard
       position relative
       top 40%

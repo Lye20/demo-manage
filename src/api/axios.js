@@ -4,7 +4,7 @@ import NProgress from "nprogress"
 import "nprogress/nprogress.css"
 
 const defaultConfig = {
-  baseURL: (process.env.NODE_ENV === "production") ? "http://localhost:80/api" : "http://localhost/mock",
+  baseURL: process.env.NODE_ENV === "development" ? "http://localhost:8080/api" : "http://81.71.159.103:8080/api",
   header: {},
   timeout: 3000
 }
@@ -35,17 +35,12 @@ class HttpRequest {
     instance.interceptors.request.use(config => {
       startLoading()
       let token = Cookies.get("token")
-      if (token) config.header.Authorization = token
+      if (token) config.headers.Authorization = `Bearer ${token}`
       return config
-    }, err => {
-      return Promise.reject(err)
     })
     instance.interceptors.response.use(response => {
       endLoading()
       return response
-    }, err => {
-      endLoading()
-      return Promise.reject(err)
     })
   }
 

@@ -2,8 +2,7 @@ import Vue from 'vue'
 import App from "./App"
 import { router } from "./router"
 import store from "./store"
-import "./mock"
-import { Container, Aside, Header, Footer, Main, Menu, Submenu, MenuItem, MenuItemGroup, Button, Dropdown, DropdownMenu, DropdownItem, Input, Table, TableColumn, Pagination, Dialog, Form, FormItem, Select, Option, Upload, Tag, Card, Col, Row } from 'element-ui'
+import { Container, Aside, Header, Footer, Main, Menu, Submenu, MenuItem, MenuItemGroup, Button, Dropdown, DropdownMenu, DropdownItem, Input, Radio, Table, TableColumn, Pagination, Dialog, Form, FormItem, Select, Option, Upload, Tag, Card, Col, Row } from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css';
 import "./assets/css/index.css"
 Vue.use(Container)
@@ -20,6 +19,7 @@ Vue.use(Dropdown)
 Vue.use(DropdownMenu)
 Vue.use(DropdownItem)
 Vue.use(Input)
+Vue.use(Radio)
 Vue.use(Table)
 Vue.use(TableColumn)
 Vue.use(Pagination)
@@ -35,13 +35,12 @@ Vue.use(Col)
 Vue.use(Row)
 
 router.beforeEach((to, from, next) => {
-  store.commit("login/GET_TOKEN")
-  const token = store.state.login.token
+  store.commit("GET_TOKEN")
+  const token = store.state.token
   if (to.name !== "login" && !token) {
     next({ name: "login" })
   } else if (to.name !== "login") {
-    if (!store.state.routes.dynamicRoutes.length) store.commit("routes/ADD_DYNAMIC_ROUTES", router)
-    if (!store.state.login.profile) store.commit("login/GET_PROFILE", token)
+    if (!store.state.dynamicRoutes.length) {store.dispatch("add_dynamic_routes", token)}
     next()
   } else if (to.name === "login" && token) {
     next({ name: "main" })

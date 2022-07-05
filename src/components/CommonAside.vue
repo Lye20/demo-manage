@@ -20,15 +20,16 @@
 </template>
 
 <script>
+  import { mapState } from "vuex"
   export default {
     name: 'MainAside',
     data(){
       return {
         isCollapse: false,
-        dynamicRoutes: [],
       }
     },
     computed: {
+      ...mapState(["dynamicRoutes"]),
       mainNavList(){
         return this.dynamicRoutes.filter(item=>!item.children)
       },
@@ -45,12 +46,6 @@
       changeCollapse(){
         this.isCollapse = !this.isCollapse
       }
-    },
-    mounted(){
-      this.$nextTick(()=>{
-        this.dynamicRoutes = this.$store.state.routes.dynamicRoutes
-      })
-      
     }
   }
 </script>
@@ -82,13 +77,16 @@
       width 180px
       line-height h
       padding-left 26px !important
+      text-align center
       span,i
         float left
-        width 30px !important
         height h
         margin-right 15px
         line-height h
         font-size 16px
+      i
+        width 30px
+
       &.is-active
         background-color #222 !important
         color gold

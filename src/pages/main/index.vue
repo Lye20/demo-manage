@@ -9,8 +9,8 @@
 </template>
 
 <script>
-import Aside from "../../components/CommonAside"
-import Header from "../../components/CommonHeader"
+import Aside from "@/components/CommonAside"
+import Header from "@/components/CommonHeader"
 import "../home"
 export default {
   name: 'MainPage',
