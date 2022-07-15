@@ -147,6 +147,7 @@
         requestInfo().then(response=>{
           if (response.data.code !== 200) return Promise.reject(response.data.message)
           this.infoForm = response.data.data
+          console.log(response)
         })
       },
       cancelPwdForm(){

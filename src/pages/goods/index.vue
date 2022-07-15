@@ -11,7 +11,7 @@
       </div>
     </el-header>
     <el-main class="goods-main">  
-      <el-table class="goods-table" ref="multipleTable" :data="showTableData" tooltip-effect="dark" :default-sort="{prop: 'id'}" height="100%" @selection-change="handleSelectionChange" :select-on-indeterminate="false" highlight-current-row>
+      <el-table class="goods-table" ref="multipleTable" :data="showTableData" tooltip-effect="dark" height="100%" @selection-change="handleSelectionChange" :select-on-indeterminate="false" highlight-current-row>
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column prop="id" label="ID" width="135px"></el-table-column>
         <el-table-column prop="name" label="名称" show-overflow-tooltip></el-table-column>
@@ -127,9 +127,6 @@
       jumpHead(){
         this.$nextTick(()=>this.currentPage = 1)
       },
-      jumpTail(){
-        this.$nextTick(()=>this.currentPage = Math.ceil(this.tableData.length/this.pageSize))
-      },
       uploadImg(file){
         let reader = new FileReader()
         reader.onload = (event=>{
@@ -149,7 +146,7 @@
                 if (response.data.code !== 200) return Promise.reject(response.data.message)
                 alert(response.data.message)
                 this.getData()
-                this.jumpTail()
+                this.jumpHead()
               }).catch(err=>alert(err))
             } else {
               editGood({...this.goodForm}).then(response=>{

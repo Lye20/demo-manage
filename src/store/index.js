@@ -16,22 +16,22 @@ export default new Vuex.Store({
     add_dynamic_routes(context) {
       getRoutesList().then(response => {
         context.commit("SET_DYNAMIC_ROUTES", JSON.parse(response.data.routesList))
-      }, err => {
-        alert("请求失败", err)
       }).catch((err) => alert(err))
     }
   },
   mutations: {
     REMOVE_DYNAMIC_ROUTES(state) {
       state.dynamicRoutes = []
+      resetRouter()
     },
     SET_TOKEN(state, token) {
-      Cookies.set("token", token)
+      Cookies.set("token", token, {expires: 3})
     },
     GET_TOKEN(state){
       state.token = Cookies.get('token') || ""
     },
     REMOVE_TOKEN(state) {
+      state.profile = ""
       state.token = ""
       Cookies.remove("token")
     }, 

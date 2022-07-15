@@ -55,7 +55,7 @@ export default {
   .body
     width 100vw
     height 100vh
-    background url("../../assets/images/bg.jpeg") no-repeat
+    background url("@/assets/img/bg.jpeg") no-repeat
     background-size cover
     .loginCard
       position relative

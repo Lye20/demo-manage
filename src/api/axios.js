@@ -1,6 +1,9 @@
 import axios from "axios"
 import Cookies from "js-cookie"
 import NProgress from "nprogress"
+import store from "../store"
+import {router} from "../router"
+
 import "nprogress/nprogress.css"
 
 const defaultConfig = {
@@ -40,8 +43,14 @@ class HttpRequest {
     })
     instance.interceptors.response.use(response => {
       endLoading()
+      if (response.data.code === 205) {
+        store.commit("REMOVE_TOKEN")
+        store.commit("REMOVE_DYNAMIC_ROUTES")
+        router.replace({name: "login"})
+        return Promise.reject(response.data.message)
+      }
       return response
-    })
+    }, err=>{console.log(err)})
   }
 
   request(config) {
